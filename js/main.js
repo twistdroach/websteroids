@@ -15,6 +15,13 @@ var Player = Class.create(Sprite, {
         this.decel = .01;
         this.accel = .5;
     },
+    getDirection: function() {
+        var direction = this.rotation % 360;
+        if ( direction < 0 ) {
+            direction = 360 + direction;
+        }
+        return direction;
+    },
     onenterframe: function() {
         if(game.input.left && !game.input.right){
             this.rotate(-this.rotSpeed);
@@ -22,10 +29,7 @@ var Player = Class.create(Sprite, {
             this.rotate(this.rotSpeed);
         }
 
-        var direction = this.rotation % 360;
-        if ( direction < 0 ) {
-            direction = 360 + direction;
-        }
+        var direction = this.getDirection();
 
         if (game.input.up && !game.input.down) {
             this.velocityX = this.velocityX + ( this.accel * Math.sin(direction*Math.PI/180));
@@ -53,28 +57,44 @@ var Player = Class.create(Sprite, {
     }
 });
 
-var Asteroid = Class.create(Sprite, {
-   initialize: function(startX, startY, startDirection) {
-       Sprite.call(this, 64, 64);
-       this.image = game.assets['res/space1.png'];
-       this.x = startX;
-       this.y = startY;
-       this.rotSpeed = 2;
-       this.speed = 2;
-       this.direction = startDirection;
-   },
-   onenterframe: function() {
-       this.rotate(this.rotSpeed);
-       var xOffset = this.speed * Math.sin(this.direction*Math.PI/180);
-       var yOffset = this.speed * Math.cos(this.direction*Math.PI/180);
-       this.moveBy(xOffset, yOffset);
+var ConstantVelocitySprite = Class.create(Sprite, {
+    initialize: function(startX, startY, startDirection, asset, spriteX, spriteY) {
+        Sprite.call(this, spriteX, spriteY);
+        this.image = game.assets[asset];
+        this.x = startX;
+        this.y = startY;
+        this.direction = startDirection;
+    },
+    onenterframe: function() {
+        this.rotate(this.rotSpeed);
+        var xOffset = this.speed * Math.sin(this.direction*Math.PI/180);
+        var yOffset = -this.speed * Math.cos(this.direction*Math.PI/180);
+        this.moveBy(xOffset, yOffset);
 
-       if (this.x < 0 || this.x > stgWidth || this.y < 0 || this.y > stgHeight) {
-           this.outOfBounds();
-       }
+        if (this.x < 0 || this.x > stgWidth || this.y < 0 || this.y > stgHeight) {
+            this.outOfBounds();
+        }
+    },
+    outOfBounds: function() {
+
+    }
+});
+
+var Bullet = Class.create(ConstantVelocitySprite, {
+   initialize: function(startX, startY, startDirection) {
+       ConstantVelocitySprite.call(this, startX, startY, startDirection, 'res/bullet.png', 4, 4);
+       this.speed = 6;
    },
    outOfBounds: function() {
+       this.scene.removeChild(this);
+   }
+});
 
+var Asteroid = Class.create(ConstantVelocitySprite, {
+   initialize: function(startX, startY, startDirection) {
+       ConstantVelocitySprite.call(this, startX, startY, startDirection, 'res/space1.png', 64, 64);
+       this.rotSpeed = 2;
+       this.speed = 2;
    }
 });
 
@@ -112,7 +132,33 @@ function randomFromInterval(from, to){
     return Math.floor(Math.random()*(to-from+1)+from);
 }
 var AsteroidScene = Class.create(Scene, {
+    initialize: function() {
+        Scene.call(this);
+        this.player = new Player();
+        this.asteroid = new BigAsteroid();
+        this.backgroundColor = "black";
+        this.addChild(this.player);
+        this.addChild(this.asteroid);
+    },
+    onenterframe: function() {
+        //check player collisions
+        if (this.player.within(this.asteroid, 30)) {
+            //react to collision
+            console.log("player collided with asteroid");
+        }
 
+        if (game.input.a) {
+            var xCenter = this.player.x + this.player.width / 2;
+            var yCenter = this.player.y + this.player.height / 2;
+            var direction = this.player.getDirection();
+            var xOffset = this.player.width * Math.sin(direction*Math.PI/180) / 2;
+            var yOffset = -this.player.height * Math.cos(direction*Math.PI/180) / 2;
+            var x = xCenter + xOffset;
+            var y = yCenter + yOffset;
+            var bullet = new Bullet(x, y, direction);
+            this.addChild(bullet);
+        }
+    }
 });
 
 window.onload = function() {
@@ -122,24 +168,12 @@ window.onload = function() {
     //space1 - asteroid
     //space2 - satellite
     game.preload('res/space0.png', 'res/space1.png', 'res/space2.png',
-        'res/start.png', 'res/gameover.png', 'res/effect0.png');
+        'res/start.png', 'res/gameover.png', 'res/effect0.png', 'res/bullet.png');
     game.fps = 30;
     game.scale = 1;
+    game.keybind(32, "a");
     game.onload = function() {
-        var scene, player, asteroid;
-        scene = new Scene();
-        player = new Player();
-        asteroid = new BigAsteroid();
-        scene.backgroundColor = "black";
-        scene.addChild(asteroid);
-        scene.addChild(player);
-        scene.addEventListener('enterframe', function() {
-           //check player collisions
-           if (player.within(asteroid, 30)) {
-               //react to collision
-               console.log("player collided with asteroid");
-           }
-        });
+        var scene = new AsteroidScene();
         game.pushScene(scene);
     }
     game.start();

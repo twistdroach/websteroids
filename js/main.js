@@ -162,33 +162,43 @@ var AsteroidScene = Class.create(Scene, {
     initialize: function() {
         Scene.call(this);
         this.player = new Player();
-        this.asteroid = new BigAsteroid();
+
         this.backgroundColor = "black";
         this.bulletGroup = new Group();
+        this.asteroidGroup = new Group();
+        this.asteroidGroup.addChild(new BigAsteroid());
+        this.asteroidGroup.addChild(new BigAsteroid());
+        this.asteroidGroup.addChild(new BigAsteroid());
         this.addChild(this.player);
         this.addChild(this.bulletGroup);
-        this.addChild(this.asteroid);
+        this.addChild(this.asteroidGroup);
     },
     onenterframe: function() {
         //check player collisions
-        if (this.player && this.player.within(this.asteroid, 30)) {
-            //react to collision
-            var x = this.player.getXCenter();
-            var y = this.player.getYCenter();
-            var explosion = new Explosion(x, y);
-            this.removeChild(this.player);
-            this.player = undefined;
-            this.addChild(explosion);
-            game.assets['res/shipExplosion.wav'].play();
-            console.log("player collided with asteroid");
+        var asteroids = this.asteroidGroup.childNodes;
+        for (var i=0; i<asteroids.length; i++) {
+            var asteroid = asteroids[i];
+            if (this.player && this.player.within(asteroid, 30)) {
+                //react to collision
+                var x = this.player.getXCenter();
+                var y = this.player.getYCenter();
+                var explosion = new Explosion(x, y);
+                this.removeChild(this.player);
+                this.player = undefined;
+                this.addChild(explosion);
+                game.assets['res/shipExplosion.wav'].play();
+                console.log("player collided with asteroid");
+            }
         }
 
         //check bullet collisions
-        var children = this.bulletGroup.childNodes;
-        for (var i=0; i<children.length; i++) {
-            if (children[i].within(this.asteroid, 30)) {
-                console.log("bullet collided with asteroid");
-                game.assets['res/asteroidExplosion.wav'].play();
+        var bullets = this.bulletGroup.childNodes;
+        for (var i=0; i<bullets.length; i++) {
+            for (var j=0; j<asteroids.length; j++) {
+                if (bullets[i].within(asteroids[j], 30)) {
+                    console.log("bullet collided with asteroid");
+                    game.assets['res/asteroidExplosion.wav'].play();
+                }
             }
         };
 

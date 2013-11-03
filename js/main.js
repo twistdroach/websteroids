@@ -86,7 +86,7 @@ var Bullet = Class.create(ConstantVelocitySprite, {
        this.speed = 6;
    },
    outOfBounds: function() {
-       this.scene.removeChild(this);
+       this.scene.bulletGroup.removeChild(this);
    }
 });
 
@@ -137,7 +137,9 @@ var AsteroidScene = Class.create(Scene, {
         this.player = new Player();
         this.asteroid = new BigAsteroid();
         this.backgroundColor = "black";
+        this.bulletGroup = new Group();
         this.addChild(this.player);
+        this.addChild(this.bulletGroup);
         this.addChild(this.asteroid);
     },
     onenterframe: function() {
@@ -146,6 +148,14 @@ var AsteroidScene = Class.create(Scene, {
             //react to collision
             console.log("player collided with asteroid");
         }
+
+        //check bullet collisions
+        var children = this.bulletGroup.childNodes;
+        for (var i=0; i<children.length; i++) {
+            if (children[i].within(this.asteroid, 30)) {
+                console.log("bullet collided with asteroid");
+            }
+        };
 
         if (game.input.a) {
             var xCenter = this.player.x + this.player.width / 2;
@@ -156,7 +166,7 @@ var AsteroidScene = Class.create(Scene, {
             var x = xCenter + xOffset;
             var y = yCenter + yOffset;
             var bullet = new Bullet(x, y, direction);
-            this.addChild(bullet);
+            this.bulletGroup.addChild(bullet);
         }
     }
 });

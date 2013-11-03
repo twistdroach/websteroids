@@ -1,7 +1,7 @@
 enchant();
 
-var stgWidth = 320;
-var stgHeight = 240;
+var stgWidth = 640;
+var stgHeight = 480;
 
 var Player = Class.create(Sprite, {
     initialize: function() {
@@ -71,9 +71,10 @@ var Explosion = Class.create(Sprite, {
         this.image = game.assets['res/effect0.png'];
     },
     onenterframe: function() {
+        //we only want to play this once then disappear...
         if (this.age % 3 == 0) {
             if(this.frame == 4){
-                this.scene.removeChild(this);
+                this.parentNode.removeChild(this);
             }
             else{
                 this.frame++;
@@ -254,11 +255,13 @@ window.onload = function() {
     //space2 - satellite
     game.preload('res/space0.png', 'res/space1.png', 'res/space2.png',
         'res/start.png', 'res/gameover.png', 'res/effect0.png', 'res/bullet.png',
-        'res/asteroidExplosion.wav', 'res/shipExplosion.wav', 'res/shoot.wav');
+        'res/asteroidExplosion.wav', 'res/shipExplosion.wav', 'res/shoot.wav',
+        'res/shipDanger.wav', 'res/bgm.ogg');
     game.fps = 30;
     game.scale = 1;
     game.keybind(32, "a");
     game.onload = function() {
+        game.assets['res/bgm.ogg'].play();
         var scene = new AsteroidScene();
         game.pushScene(scene);
     }

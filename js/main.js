@@ -22,6 +22,12 @@ var Player = Class.create(Sprite, {
         }
         return direction;
     },
+    getXCenter: function() {
+        return this.x + this.width / 2;
+    },
+    getYCenter: function() {
+        return this.y + this.height / 2;
+    },
     onenterframe: function() {
         if(game.input.left && !game.input.right){
             this.rotate(-this.rotSpeed);
@@ -57,6 +63,26 @@ var Player = Class.create(Sprite, {
     }
 });
 
+var Explosion = Class.create(Sprite, {
+    initialize: function(startX, startY) {
+        Sprite.call(this, 16, 16);
+        this.x = startX;
+        this.y = startY;
+        this.scale(2);
+        this.image = game.assets['res/effect0.png'];
+    },
+    onenterframe: function() {
+        if (this.age % 3 == 0) {
+            if(this.frame == 4){
+                this.scene.removeChild(this);
+            }
+            else{
+                this.frame++;
+            }
+        }
+    }
+});
+
 var ConstantVelocitySprite = Class.create(Sprite, {
     initialize: function(startX, startY, startDirection, asset, spriteX, spriteY) {
         Sprite.call(this, spriteX, spriteY);
@@ -84,6 +110,7 @@ var Bullet = Class.create(ConstantVelocitySprite, {
    initialize: function(startX, startY, startDirection) {
        ConstantVelocitySprite.call(this, startX, startY, startDirection, 'res/bullet.png', 4, 4);
        this.speed = 6;
+       game.assets['res/shoot.wav'].play();
    },
    outOfBounds: function() {
        this.scene.bulletGroup.removeChild(this);
@@ -144,8 +171,15 @@ var AsteroidScene = Class.create(Scene, {
     },
     onenterframe: function() {
         //check player collisions
-        if (this.player.within(this.asteroid, 30)) {
+        if (this.player && this.player.within(this.asteroid, 30)) {
             //react to collision
+            var x = this.player.getXCenter();
+            var y = this.player.getYCenter();
+            var explosion = new Explosion(x, y);
+            this.removeChild(this.player);
+            this.player = undefined;
+            this.addChild(explosion);
+            game.assets['res/shipExplosion.wav'].play();
             console.log("player collided with asteroid");
         }
 
@@ -154,12 +188,13 @@ var AsteroidScene = Class.create(Scene, {
         for (var i=0; i<children.length; i++) {
             if (children[i].within(this.asteroid, 30)) {
                 console.log("bullet collided with asteroid");
+                game.assets['res/asteroidExplosion.wav'].play();
             }
         };
 
         if (game.input.a) {
-            var xCenter = this.player.x + this.player.width / 2;
-            var yCenter = this.player.y + this.player.height / 2;
+            var xCenter = this.player.getXCenter();
+            var yCenter = this.player.getYCenter();
             var direction = this.player.getDirection();
             var xOffset = this.player.width * Math.sin(direction*Math.PI/180) / 2;
             var yOffset = -this.player.height * Math.cos(direction*Math.PI/180) / 2;
@@ -178,7 +213,8 @@ window.onload = function() {
     //space1 - asteroid
     //space2 - satellite
     game.preload('res/space0.png', 'res/space1.png', 'res/space2.png',
-        'res/start.png', 'res/gameover.png', 'res/effect0.png', 'res/bullet.png');
+        'res/start.png', 'res/gameover.png', 'res/effect0.png', 'res/bullet.png',
+        'res/asteroidExplosion.wav', 'res/shipExplosion.wav', 'res/shoot.wav');
     game.fps = 30;
     game.scale = 1;
     game.keybind(32, "a");

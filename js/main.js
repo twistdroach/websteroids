@@ -126,7 +126,7 @@ var Bullet = Class.create(ConstantVelocitySprite, {
 var Asteroid = Class.create(ConstantVelocitySprite, {
    initialize: function(startX, startY, startDirection) {
        ConstantVelocitySprite.call(this, startX, startY, startDirection, 'res/space1.png', 64, 64);
-       this.rotSpeed = 2;
+       this.rotSpeed = randomizeSign(randomFromInterval(1,5));
        this.speed = 2;
    },
     outOfBounds: function() {
@@ -185,6 +185,42 @@ var BigAsteroid = Class.create(Asteroid, {
 function randomFromInterval(from, to){
     return Math.floor(Math.random()*(to-from+1)+from);
 }
+
+function randomizeSign(input) {
+    switch (randomFromInterval(0,1)) {
+        case 0:
+            return input;
+            break;
+        case 1:
+            return -input;
+            break;
+    }
+}
+
+var UiGroup = Class.create(Group, {
+    initialize: function() {
+        Group.call(this);
+        this.score = new enchant.Label();
+        this.score.x = 5;
+        this.score.y = 5;
+        this.score.color = "white";
+        this.score.width = 128;
+        this.score.height = 64;
+        this.score.font = "12px 'Arial'";
+        this.scoreNum = 0;
+        this.reset();
+        this.addChild(this.score);
+    },
+    addToScore: function(score) {
+        this.scoreNum += score;
+        this.score.text = "Score: " + this.scoreNum;
+    },
+    reset: function() {
+        this.scoreNum = 0;
+        this.addToScore(0);
+    }
+});
+
 var AsteroidScene = Class.create(Scene, {
     initialize: function() {
         Scene.call(this);
@@ -193,9 +229,11 @@ var AsteroidScene = Class.create(Scene, {
         this.backgroundColor = "black";
         this.bulletGroup = new Group();
         this.asteroidGroup = new Group();
+        this.uiGroup = new UiGroup();
         this.asteroidGroup.addChild(new BigAsteroid());
         this.asteroidGroup.addChild(new BigAsteroid());
         this.asteroidGroup.addChild(new BigAsteroid());
+        this.addChild(this.uiGroup);
         this.addChild(this.player);
         this.addChild(this.bulletGroup);
         this.addChild(this.asteroidGroup);
@@ -206,7 +244,7 @@ var AsteroidScene = Class.create(Scene, {
         for (var i=0; i<asteroids.length; i++) {
             var asteroid = asteroids[i];
             if (this.player && this.player.within(asteroid, 30)) {
-                //react to collision
+                //player has collided with asteroid time to give up the ghost
                 var x = this.player.getXCenter();
                 var y = this.player.getYCenter();
                 var explosion = new Explosion(x, y);
@@ -215,7 +253,12 @@ var AsteroidScene = Class.create(Scene, {
                 this.player = undefined;
                 this.addChild(explosion);
                 game.assets['res/shipExplosion.wav'].play();
-                console.log("player collided with asteroid");
+
+                var gameOver = new Sprite(189, 97);
+                gameOver.image = game.assets['res/gameover.png'];
+                gameOver.x = stgWidth / 2 - gameOver.width / 2;
+                gameOver.y = stgHeight / 2 - gameOver.height / 2;
+                this.addChild(gameOver);
             }
         }
 
@@ -229,6 +272,7 @@ var AsteroidScene = Class.create(Scene, {
                     this.bulletGroup.removeChild(bullet);
                     var asteroid = asteroids[j];
                     asteroid.bulletCollision();
+                    this.uiGroup.addToScore(5);
                 }
             }
         };

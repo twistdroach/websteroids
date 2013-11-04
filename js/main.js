@@ -208,8 +208,21 @@ var UiGroup = Class.create(Group, {
         this.score.height = 64;
         this.score.font = "12px 'Arial'";
         this.scoreNum = 0;
-        this.reset();
         this.addChild(this.score);
+
+        this.level = new enchant.Label();
+        this.level.x = 5;
+        this.level.y = 20;
+        this.level.color = "white";
+        this.level.width = 128;
+        this.level.height = 64;
+        this.level.font = "12px 'Arial'";
+        this.addChild(this.level);
+
+        this.reset();
+    },
+    setLevel: function(level) {
+        this.level.text = "Level: " + level;
     },
     addToScore: function(score) {
         this.scoreNum += score;
@@ -218,11 +231,12 @@ var UiGroup = Class.create(Group, {
     reset: function() {
         this.scoreNum = 0;
         this.addToScore(0);
+        this.setLevel(1);
     }
 });
 
 var AsteroidScene = Class.create(Scene, {
-    initialize: function() {
+    initialize: function(asteroidSpeed) {
         Scene.call(this);
         this.player = new Player();
 
@@ -230,13 +244,25 @@ var AsteroidScene = Class.create(Scene, {
         this.bulletGroup = new Group();
         this.asteroidGroup = new Group();
         this.uiGroup = new UiGroup();
-        this.asteroidGroup.addChild(new BigAsteroid());
-        this.asteroidGroup.addChild(new BigAsteroid());
-        this.asteroidGroup.addChild(new BigAsteroid());
+
         this.addChild(this.uiGroup);
         this.addChild(this.player);
         this.addChild(this.bulletGroup);
         this.addChild(this.asteroidGroup);
+
+        this.setLevel(1);
+    },
+    setLevel: function(newLevel) {
+        this.level = newLevel;
+        var numberOfAsteroids = newLevel % 3 + 3;
+        var asteroidSpeed = Math.floor(newLevel / 3) + 2;
+        console.log("setting numberOfAsteroids = " + numberOfAsteroids + ", asteroidSpeed = " + asteroidSpeed);
+        for (var i=0; i<numberOfAsteroids; i++) {
+            var asteroid = new BigAsteroid();
+            asteroid.speed = asteroidSpeed;
+            this.asteroidGroup.addChild(asteroid);
+        }
+        this.uiGroup.setLevel(newLevel);
     },
     onenterframe: function() {
         //check player collisions
@@ -253,12 +279,14 @@ var AsteroidScene = Class.create(Scene, {
                 this.player = undefined;
                 this.addChild(explosion);
                 game.assets['res/shipExplosion.wav'].play();
-
-                var gameOver = new Sprite(189, 97);
-                gameOver.image = game.assets['res/gameover.png'];
-                gameOver.x = stgWidth / 2 - gameOver.width / 2;
-                gameOver.y = stgHeight / 2 - gameOver.height / 2;
-                this.addChild(gameOver);
+                var that = this;
+                setTimeout(function() {
+                    var gameOver = new Sprite(189, 97);
+                    gameOver.image = game.assets['res/gameover.png'];
+                    gameOver.x = stgWidth / 2 - gameOver.width / 2;
+                    gameOver.y = stgHeight / 2 - gameOver.height / 2;
+                    that.addChild(gameOver);
+                }, 1000);
             }
         }
 
@@ -273,6 +301,9 @@ var AsteroidScene = Class.create(Scene, {
                     var asteroid = asteroids[j];
                     asteroid.bulletCollision();
                     this.uiGroup.addToScore(5);
+                    if (this.asteroidGroup.childNodes.length == 0) {
+                        this.setLevel(this.level + 1);
+                    }
                 }
             }
         };

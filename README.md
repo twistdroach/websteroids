@@ -1,4 +1,4 @@
-# [Websteroids](http://)
+# [Websteroids](http://api.twistdroach.com/websteroids/)
 
 Websteroids is a rewrite of the classic asteroids arcade game using enchant.js.  Be gentle - this is almost the first javascript I've written...
 
